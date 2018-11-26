@@ -15,3 +15,6 @@ The step are as follow:
 1. Config the ./conf file .  
 2. Start the ./script/tcp_server first.  
 3. Run the ./script/tcp_agent .  
+
+#中文版设计稿
+https://www.jianshu.com/p/6a03ba897e04
