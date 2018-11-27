@@ -1,8 +1,8 @@
 # log_demo
-This is a demo about log which include log collect Agent，Server .  
+This is a demo about log which include log collection Agent，Server .  
 Feature :  
-1 Hard link promise agent collect the log untill all log collect finish .  
-2 Sync write collection's offset promise agent recover from the lastest collection step .  
+1 Hard link promise agent collect the log untill all log collection finish .  
+2 Sync write collection's offset promise that agent recover from the lastest collection step .  
 V1.1 new feature:
 1 Optimize the network part to improve the performance.
 2 Server log demo collect all logs into one file to using sequential write so that improve the performance.
