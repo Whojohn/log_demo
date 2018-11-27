@@ -20,8 +20,8 @@ class _CheckPoint(object):
         :param fd:
         :return:
         """
-        fil_name = agentconf.CHECK_POINT_PATH+str(os.fstat(fd.fileno()).st_ino)
-	print "check_point",fil_name
+        fil_name = agentconf.CHECK_POINT_PATH + str(os.fstat(fd.fileno()).st_ino)
+        print "check_point", fil_name
         try:
             self.fil = open(fil_name, "r")
             pre_location = self.fil.readline()[:-1]
@@ -46,7 +46,7 @@ class Agent(object):
         self.net = NetTransport()
         self.check = _CheckPoint()
 
-    def time_count( fun):  # fun = world
+    def time_count(fun):  # fun = world
         #  @functools.wraps(fun) 的作用就是保留原函数信息如__name__, __doc__, __module__
         @functools.wraps(fun)
         def wrapper(*args, **kwargs):
@@ -66,7 +66,7 @@ class Agent(object):
 
     def hard_link(self):
         log_fil = []
-	print "check_path",agentconf.CHECK_PATH
+        print "check_path", agentconf.CHECK_PATH
         for fil in os.listdir(agentconf.CHECK_PATH):
             if re.match(agentconf.CHECK_RULE, fil):
                 fil_name = "".join([agentconf.CHECK_PATH, fil])
@@ -75,17 +75,18 @@ class Agent(object):
                 checkpoint_name = "".join([agentconf.CHECK_POINT_PATH, str(os.stat(fil_name).st_ino)])
                 if os.path.exists(link_name):
                     # Delect the link when the link over OVER_TIME without modify and Agent push all data.
-                    if time.time() - os.stat(fil_name).st_mtime > agentconf.OVER_TIME and os.path.exists(checkpoint_name):
+                    if time.time() - os.stat(fil_name).st_mtime > agentconf.OVER_TIME and os.path.exists(
+                            checkpoint_name):
                         with open(checkpoint_name, "r") as f:
                             temp = f.readline().split("\n")[0]
-			    if temp != "" and os.stat(checkpoint_name).st_size == int(temp):
+                            if temp != "" and os.stat(checkpoint_name).st_size == int(temp):
                                 os.unlink(link_name)
 
                 else:
-                    #print fil_name, link_name
+                    print fil_name, link_name
                     os.link(fil_name, link_name)
-        
-	return log_fil
+
+        return log_fil
 
     @time_count
     def collect(self, fil_path):
@@ -100,8 +101,17 @@ class Agent(object):
         # Avoid the overload the agent cpu and disk.
         # __loop = 0
         while 1:
-            temp = f.readline()
-            #print temp[:-1]
+            temp = []
+            judge = 0
+            for each in xrange(200):
+                pre = f.tell()
+                data = f.readline()
+                if data == "" or len(data)+judge > 1020:
+                    f.seek(pre)
+                else:
+                    temp.append(data)
+                    judge += 1
+            temp = "".join(temp)
 
             # Avoid the overload the agent cpu and disk.
             # if __loop%1000 == 0:
@@ -117,12 +127,14 @@ class Agent(object):
                 self.check.stop()
                 f.close()
                 self.net.send("exit")
+                print "exit"
                 break
 
     def run(self):
         log_fil = self.hard_link()
-	for fil_path in log_fil:
+        for fil_path in log_fil:
             self.collect(fil_path)
+
 
 if __name__ == "__main__":
     s = Agent()

@@ -2,3 +2,6 @@
 # -*- coding: utf-8 -*-
 IP = "127.0.0.1"
 PORT = 9999
+
+#
+LOG_FIL = "./queue-flus"
