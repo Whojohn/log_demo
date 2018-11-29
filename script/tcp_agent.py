@@ -108,9 +108,10 @@ class Agent(object):
                 data = f.readline()
                 if data == "" or len(data)+judge > 1020:
                     f.seek(pre)
+                    break
                 else:
                     temp.append(data)
-                    judge += 1
+                    judge += len(data)
             temp = "".join(temp)
 
             # Avoid the overload the agent cpu and disk.
