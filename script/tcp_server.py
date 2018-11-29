@@ -19,7 +19,7 @@ class MyServer(SocketServer.BaseRequestHandler ,object):
         conn = self.request
         print "get fd ok"
         while Flag:
-            data = conn.recv(1024)
+            data = conn.recv(32*1024)
             if data == 'exit' or data == "":
                 print "quiet"
                 Flag = False

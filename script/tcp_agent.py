@@ -103,14 +103,15 @@ class Agent(object):
         while 1:
             temp = []
             judge = 0
-            for each in xrange(200):
+            for each in xrange(32):
                 pre = f.tell()
-                data = f.readline()
-                if data == "" or len(data)+judge > 1020:
+                data = "".join(f.readlines(1))
+                if data == "" or len(data)+judge > 32*1024:
                     f.seek(pre)
+                    break
                 else:
                     temp.append(data)
-                    judge += 1
+                    judge += len(data)
             temp = "".join(temp)
 
             # Avoid the overload the agent cpu and disk.
