@@ -5,6 +5,7 @@ import functools
 import sys
 import os
 import re
+from struct import pack
 from agentnet import NetTransport
 sys.path.append("../")
 from conf import agentconf
@@ -51,13 +52,12 @@ class Agent(object):
         @functools.wraps(fun)
         def wrapper(*args, **kwargs):
             """
-            this is wrapper function
             :param args:
             :param kwargs:
             :return:
             """
             start_time = time.time()
-            temp = fun(*args, **kwargs)  # world(a=1, b=2)
+            temp = fun(*args, **kwargs)
             end_time = time.time()
             print("%s函数运行时间为%s" % (fun.__name__, end_time - start_time))
             return temp
@@ -101,32 +101,35 @@ class Agent(object):
         # Avoid the overload the agent cpu and disk.
         # __loop = 0
         while 1:
-            temp = []
+            data = []
             judge = 0
             for each in xrange(32):
                 pre = f.tell()
-                data = "".join(f.readlines(1))
-                if data == "" or len(data)+judge > 32*1024:
+                temp = "".join(f.readlines(1))
+                if temp == "" or len(temp)+judge > 32*1024:
                     f.seek(pre)
+                    data = "".join(data)
+                    if data != "":
+                        data = data.encode("zlib")
                     break
                 else:
-                    temp.append(data)
-                    judge += len(data)
-            temp = "".join(temp)
-
-            # Avoid the overload the agent cpu and disk.
-            # if __loop%1000 == 0:
-            #   time.sleep(0.003)
-
-            if temp != "":
-                # Push the data to the server.
-                self.net.send(temp)
-                # Flush the check-point
+                    data.append(temp)
+                    judge += len(temp)
+            
+            if data != "":
+                # Three step to send a data.
+                # 1.It must send the length of data to server in 4 bytes long.
+                # 2.Just push the data to the server.
+                # 3. Flush the check-point. Notice Notice Notice , check-point should be write after send
+                #  so that we will not miss any log.
+                self.net.send(pack("i", len(data)))
+                self.net.send(data)
                 self.check.flush(f.tell())
             else:
                 self.check.flush(f.tell())
                 self.check.stop()
                 f.close()
+                self.net.send(pack("i", len("exit")))
                 self.net.send("exit")
                 print "exit"
                 break

@@ -3,7 +3,7 @@
 import SocketServer
 import sys
 import deque_master
-
+from struct import unpack
 sys.path.append("../")
 from conf import serverconf
 
@@ -14,19 +14,17 @@ class MyServer(SocketServer.BaseRequestHandler ,object):
 
     def handle(self):
         # print self.request,self.client_address,self.server
-        Flag = True
         fd = self.server.buf.get_buffer("log")
         conn = self.request
         print "get fd ok"
-        while Flag:
-            data = conn.recv(32*1024)
-            if data == 'exit' or data == "":
+        while 1:
+            data_len = unpack("i", conn.recv(4))[0]
+            data = conn.recv(data_len)
+            if data == 'exit':
                 print "quiet"
-                Flag = False
                 break
-                # else:
-                #     conn.sendall('请输入.')
-            fd.put(data) 
+            else:
+                fd.put(data.decode("zlib"))
 
 
 if __name__ == '__main__':
