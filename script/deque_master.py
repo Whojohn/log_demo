@@ -21,7 +21,7 @@ class FileFlush(object):
     def write_file(self):
         while 1:
             self.fd = open(serverconf.LOG_FIL, "a+")
-            print self.slot
+            #print self.slot
             for topic in self.slot.keys():
                 buf = self.slot[topic]["que"]
                 buf.qsize()
@@ -35,7 +35,7 @@ class FileFlush(object):
                     self.slot[topic]["con"] = 0
                 else:
                     self.slot[topic]["con"] += 1
-            print "finish write"
+            #print "finish write"
             self.fd.close()
             time.sleep(0.5)
 
@@ -43,7 +43,7 @@ class FileFlush(object):
         if topic not in self.slot:
             self.lock.acquire()
             self.slot[topic] = dict()
-            self.slot[topic]["que"] = Queue(maxsize=1024 * 50)
+            self.slot[topic]["que"] = Queue(maxsize=1024 * 20)
             self.slot[topic]["con"] = 0
             self.lock.release()
 

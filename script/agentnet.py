@@ -17,6 +17,7 @@ class NetTransport(object):
         self.sk.connect(ip_port)
 
     def __close_socket(self):
+        #self.sk.shutdown(2)
         self.sk.close()
 
     def send(self, data):
@@ -29,3 +30,6 @@ class NetTransport(object):
             self.label = 1
             print "break"
             return
+
+
+

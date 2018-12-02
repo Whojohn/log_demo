@@ -17,7 +17,7 @@ class _CheckPoint(object):
 
     def check_point(self, fd):
         """
-        #Recover from the lastest readed.
+        # Recover from the lastest readed.
         :param fd:
         :return:
         """
@@ -52,12 +52,13 @@ class Agent(object):
         @functools.wraps(fun)
         def wrapper(*args, **kwargs):
             """
+            this is wrapper function
             :param args:
             :param kwargs:
             :return:
             """
             start_time = time.time()
-            temp = fun(*args, **kwargs)
+            temp = fun(*args, **kwargs)  # world(a=1, b=2)
             end_time = time.time()
             print("%s函数运行时间为%s" % (fun.__name__, end_time - start_time))
             return temp
@@ -98,8 +99,6 @@ class Agent(object):
         f = open(fil_path, "r")
         self.check.check_point(f)
 
-        # Avoid the overload the agent cpu and disk.
-        # __loop = 0
         while 1:
             data = []
             judge = 0
@@ -115,7 +114,7 @@ class Agent(object):
                 else:
                     data.append(temp)
                     judge += len(temp)
-            
+
             if data != "":
                 # Three step to send a data.
                 # 1.It must send the length of data to server in 4 bytes long.
@@ -124,6 +123,7 @@ class Agent(object):
                 #  so that we will not miss any log.
                 self.net.send(pack("i", len(data)))
                 self.net.send(data)
+                time.sleep(0.000001)
                 self.check.flush(f.tell())
             else:
                 self.check.flush(f.tell())

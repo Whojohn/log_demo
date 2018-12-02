@@ -16,7 +16,8 @@ class MyServer(SocketServer.BaseRequestHandler ,object):
         # print self.request,self.client_address,self.server
         fd = self.server.buf.get_buffer("log")
         conn = self.request
-        print "get fd ok"
+        # print "get fd ok"
+        server_log=open("ser","w")
         while 1:
             data_len = unpack("i", conn.recv(4))[0]
             data = conn.recv(data_len)
@@ -25,6 +26,9 @@ class MyServer(SocketServer.BaseRequestHandler ,object):
                 break
             else:
                 fd.put(data.decode("zlib"))
+                # fd.put(data)
+
+
 
 
 if __name__ == '__main__':
