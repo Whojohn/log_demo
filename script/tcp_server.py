@@ -12,6 +12,12 @@ class MyServer(SocketServer.BaseRequestHandler ,object):
     def __init__(self, *args, **kw):
         super(MyServer, self).__init__(*args, **kw)
 
+    def recv(self, conn, length):
+        data = ""
+        while len(data)<length:
+            data += conn.recv(length-len(data))
+        return data
+
     def handle(self):
         # print self.request,self.client_address,self.server
         fd = self.server.buf.get_buffer("log")
@@ -19,8 +25,8 @@ class MyServer(SocketServer.BaseRequestHandler ,object):
         # print "get fd ok"
         server_log=open("ser","w")
         while 1:
-            data_len = unpack("i", conn.recv(4))[0]
-            data = conn.recv(data_len)
+            data_len = unpack("i", self.recv(conn, 4))[0]
+            data = self.recv(conn, data_len)
             if data == 'exit':
                 print "quiet"
                 break

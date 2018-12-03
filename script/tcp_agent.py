@@ -123,7 +123,6 @@ class Agent(object):
                 #  so that we will not miss any log.
                 self.net.send(pack("i", len(data)))
                 self.net.send(data)
-                time.sleep(0.000001)
                 self.check.flush(f.tell())
             else:
                 self.check.flush(f.tell())
