@@ -19,11 +19,20 @@ The step are as follow:
 1. Config all the ./conf file .  
 2. Start the ./script/tcp_server first.  
 3. Run the ./script/tcp_agent .  
+# Comming soon  
+1. By using reload to load the configure change.  
+2. It will using the supervisor as for process manager.  
+3. It will import the multi disk support.
+4. Cgroup as a menthod to limit the Agent resource.
+
+
 
 # 详细中文版设计稿
 https://www.jianshu.com/p/6a03ba897e04  
 ### （2018//12/2号更新，最新版本为稳定版本，已测试各模块，功能。）  
-日志收集Agent, 包括一个简单的Server作为Demo展示（后续考虑对接Kafka等环境）。  
+###  For some reason, i will not development this demo until i hava enough time.  
+###  某些原因，暂停更新，直至有空填坑。  
+日志收集Agent, 包括一个简单的Server作为Demo展示（后续考虑对接Kafka等环境）。    
 特性：  
 Agent：  
 1. 利用硬连接保证Agent日志直至收集完成，文件才会被系统回收。  
@@ -37,7 +46,9 @@ Server:
 
 ~~2. 引入压缩。~~  (仅作为展示，后期会改为lz4,以提高性能。)
 
-未来特性：
-1. 配置热加载，利用reload。
-2. 完整的进程管理，supervisor实现。
-3. 独立的写进程，进一步提高多磁盘性能（埋下一个坑）。
+未来特性：  
+1. 配置热加载，利用reload。  
+2. 完整的进程管理，supervisor实现。  
+3. 引入多磁盘特性（坑）。  
+4. 利用cgroup 进行资源上限管理，防止Agent占用宿主磁盘过高。  
+5. 更好的程序健壮性（所有入口，出口添加异常处理，需要大量人力。。。）。  
