@@ -5,6 +5,7 @@ import functools
 import sys
 import os
 import re
+from lz4 import lz4.frame
 from struct import pack
 from agentnet import NetTransport
 sys.path.append("../")
@@ -108,7 +109,7 @@ class Agent(object):
                 # 2.Just push the data to the server.
                 # 3. Flush the check-point. Notice Notice Notice , check-point should be write after send
                 #  so that we will not miss any log.
-                data = data.encode("zlib")
+                data = lz4.frame.compress(data)
                 self.net.send(pack("i", len(data)))
                 self.net.send(data)
                 self.check.flush(f.tell())

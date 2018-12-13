@@ -3,6 +3,7 @@
 import SocketServer
 import sys
 import deque_master
+from lz4 import lz4.frame
 from struct import unpack
 sys.path.append("../")
 from conf import serverconf
@@ -31,7 +32,7 @@ class MyServer(SocketServer.BaseRequestHandler ,object):
                 print "quiet"
                 break
             else:
-                fd.put(data.decode("zlib"))
+                fd.put(lz4.frame.decompress(data))
                 # fd.put(data)
 
 
