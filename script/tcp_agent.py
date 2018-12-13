@@ -100,20 +100,7 @@ class Agent(object):
         self.check.check_point(f)
 
         while 1:
-            data = []
-            judge = 0
-            for each in xrange(32):
-                pre = f.tell()
-                temp = "".join(f.readlines(1))
-                if temp == "" or len(temp)+judge > 32*1024:
-                    f.seek(pre)
-                    data = "".join(data)
-                    if data != "":
-                        data = data.encode("zlib")
-                    break
-                else:
-                    data.append(temp)
-                    judge += len(temp)
+            data = "".join(f.readlines(32*1024))
 
             if data != "":
                 # Three step to send a data.
@@ -121,6 +108,7 @@ class Agent(object):
                 # 2.Just push the data to the server.
                 # 3. Flush the check-point. Notice Notice Notice , check-point should be write after send
                 #  so that we will not miss any log.
+                data = data.encode("zlib")
                 self.net.send(pack("i", len(data)))
                 self.net.send(data)
                 self.check.flush(f.tell())
