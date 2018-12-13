@@ -5,7 +5,7 @@ import functools
 import sys
 import os
 import re
-from lz4 import lz4.frame
+import lz4.frame
 from struct import pack
 from agentnet import NetTransport
 sys.path.append("../")
