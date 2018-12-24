@@ -68,25 +68,34 @@ class Agent(object):
 
     def hard_link(self):
         log_fil = []
-        print "check_path", agentconf.CHECK_PATH
-        for fil in os.listdir(agentconf.CHECK_PATH):
-            if re.match(agentconf.CHECK_RULE, fil):
-                fil_name = "".join([agentconf.CHECK_PATH, fil])
-                log_fil.append("".join([agentconf.CHECK_PATH, fil]))
-                link_name = "".join([agentconf.CHECK_POINT_PATH, str(os.stat(fil_name).st_ino), ".link"])
-                checkpoint_name = "".join([agentconf.CHECK_POINT_PATH, str(os.stat(fil_name).st_ino)])
-                if os.path.exists(link_name):
-                    # Delect the link when the link over OVER_TIME without modify and Agent push all data.
-                    if time.time() - os.stat(fil_name).st_mtime > agentconf.OVER_TIME and os.path.exists(
-                            checkpoint_name):
-                        with open(checkpoint_name, "r") as f:
-                            temp = f.readline().split("\n")[0]
-                            if temp != "" and os.stat(checkpoint_name).st_size == int(temp):
-                                os.unlink(link_name)
+        print "log path setting is ", agentconf.LOG_SET
+        for each in agentconf.LOG_SET:
+            # loading the log path setup
+            path_list = agentconf.LOG_SET[each]["path"]
+            rule = agentconf.LOG_SET[each]["rule"]
+            topic = each
+            check_point_path = agentconf.CHECK_POINT_PATH
+            over_time = agentconf.OVER_TIME
 
-                else:
-                    print fil_name, link_name
-                    os.link(fil_name, link_name)
+            for path in path_list:
+                for fil in os.listdir(path):
+                    if re.match(rule, fil):
+                        fil_name = "".join([path, fil])
+                        log_fil.append(fil_name)
+                        link_name = "".join([check_point_path, str(os.stat(fil_name).st_ino), ".link"])
+                        check_point_name = "".join([check_point_path, str(os.stat(fil_name).st_ino)])
+                        if os.path.exists(link_name):
+                            # Delect the link when the link over OVER_TIME without modify and Agent push all data.
+                            if time.time() - os.stat(fil_name).st_mtime > over_time and os.path.exists(
+                                    check_point_name):
+                                with open(check_point_name, "r") as f:
+                                    temp = f.readline().split("\n")[0]
+                                    if temp != "" and os.stat(check_point_name).st_size == int(temp):
+                                        os.unlink(link_name)
+
+                        else:
+                            print fil_name, link_name
+                            os.link(fil_name, link_name)
 
         return log_fil
 
