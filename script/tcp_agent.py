@@ -24,14 +24,12 @@ class _CheckPoint(object):
         """
         fil_name = agentconf.CHECK_POINT_PATH + str(os.fstat(fd.fileno()).st_ino)
         print "check_point", fil_name
-        try:
+        if os.path.exists(fil_name):
             self.fil = open(fil_name, "r")
             pre_location = self.fil.readline()[:-1]
             if pre_location != "":
                 fd.seek(int(pre_location))
                 self.fil.close()
-        except:
-            pass
         self.fil = open(fil_name, "w", buffering=0)
         return
 
@@ -95,6 +93,13 @@ class Agent(object):
 
                         else:
                             print fil_name, link_name
+                            # If the check point exists before hard link that means the indoe has reuse again. So we must
+                            # Delete it.
+                            if os.path.exists(check_point_name):
+                                try:
+                                    os.remove(check_point_name)
+                                except Exception as e:
+                                    print e
                             os.link(fil_name, link_name)
 
         return log_fil
