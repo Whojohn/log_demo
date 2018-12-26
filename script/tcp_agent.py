@@ -5,6 +5,7 @@ import functools
 import sys
 import os
 import re
+import json
 import lz4.frame
 from struct import pack
 from agentnet import NetTransport
@@ -22,15 +23,15 @@ class _CheckPoint(object):
         :param fd:
         :return:
         """
-        fil_name = agentconf.CHECK_POINT_PATH + str(os.fstat(fd.fileno()).st_ino)
-        print "check_point", fil_name
-        if os.path.exists(fil_name):
-            self.fil = open(fil_name, "r")
+        fil_path = agentconf.CHECK_POINT_PATH + str(os.fstat(fd.fileno()).st_ino)
+        print "check_point", fil_path
+        if os.path.exists(fil_path):
+            self.fil = open(fil_path, "r")
             pre_location = self.fil.readline()[:-1]
             if pre_location != "":
                 fd.seek(int(pre_location))
                 self.fil.close()
-        self.fil = open(fil_name, "w", buffering=0)
+        self.fil = open(fil_path, "w", buffering=0)
         return
 
     def flush(self, offset):
@@ -46,18 +47,16 @@ class Agent(object):
         self.net = NetTransport()
         self.check = _CheckPoint()
 
-    def time_count(fun):  # fun = world
-        #  @functools.wraps(fun) 的作用就是保留原函数信息如__name__, __doc__, __module__
+    def time_count(fun):
         @functools.wraps(fun)
         def wrapper(*args, **kwargs):
             """
-            this is wrapper function
             :param args:
             :param kwargs:
             :return:
             """
             start_time = time.time()
-            temp = fun(*args, **kwargs)  # world(a=1, b=2)
+            temp = fun(*args, **kwargs)
             end_time = time.time()
             print("%s函数运行时间为%s" % (fun.__name__, end_time - start_time))
             return temp
@@ -65,7 +64,7 @@ class Agent(object):
         return wrapper
 
     def hard_link(self):
-        log_fil = []
+        log_list = []
         print "log path setting is ", agentconf.LOG_SET
         for each in agentconf.LOG_SET:
             # loading the log path setup
@@ -78,52 +77,62 @@ class Agent(object):
             for path in path_list:
                 for fil in os.listdir(path):
                     if re.match(rule, fil):
-                        fil_name = "".join([path, fil])
-                        log_fil.append(fil_name)
-                        link_name = "".join([check_point_path, str(os.stat(fil_name).st_ino), ".link"])
-                        check_point_name = "".join([check_point_path, str(os.stat(fil_name).st_ino)])
-                        if os.path.exists(link_name):
-                            # Delect the link when the link over OVER_TIME without modify and Agent push all data.
-                            if time.time() - os.stat(fil_name).st_mtime > over_time and os.path.exists(
-                                    check_point_name):
-                                with open(check_point_name, "r") as f:
-                                    temp = f.readline().split("\n")[0]
-                                    if temp != "" and os.stat(check_point_name).st_size == int(temp):
-                                        os.unlink(link_name)
+                        fil_path = "".join([path, fil])
+                        link_path = "".join([check_point_path, str(os.stat(fil_path).st_ino), ".link"])
+                        check_point_name = "".join([check_point_path, str(os.stat(fil_path).st_ino)])
+                        # The hard link life cycle need three element : over time,hard link file, offset file.
+                        # That means it will be eight situation appear in logic.
+                        # However , the potential situation are as follow.
+                        # 1. below over time, hard link and offset doesn't exists.
+                        # 2. over over time , hard link and offset doesn't exists.
+                        # 3. below over time, hard link and offset is exists.
+                        # 4. below over time, hard link dismiss but offset is exists.
+                        # 5. over over time, hard link and offset is exists.
+                        # 6. over over time, hard link dismiss but offset is exists.
 
-                        else:
-                            print fil_name, link_name
-                            # If the check point exists before hard link that means the indoe has reuse again. So we must
-                            # Delete it.
-                            if os.path.exists(check_point_name):
-                                try:
-                                    os.remove(check_point_name)
-                                except Exception as e:
-                                    print e
-                            os.link(fil_name, link_name)
-
-        return log_fil
+                        # situation 1 and 2
+                        if os.path.exists(link_path) == False and os.path.exists(check_point_name) is False:
+                            os.link(fil_path, link_path)
+                        # situation 4
+                        elif os.path.exists(link_path) == False and os.path.exists(check_point_name) == True and (time.time() - os.stat(fil_path).st_mtime) < over_time:
+                            os.remove(check_point_name)
+                            os.link(fil_path, link_path)
+                        # situation 5
+                        elif os.path.exists(link_path) == True and os.path.exists(check_point_name) == True and (time.time() - os.stat(fil_path).st_mtime) > over_time:
+                            # unlink till the log collection finish.
+                            with open(check_point_name, "r") as f:
+                                temp = f.readline().split("\n")[0]
+                                if temp != "" and os.stat(check_point_name).st_size == int(temp):
+                                    os.unlink(link_path)
+                                    continue
+                        # situation 6
+                        elif os.path.exists(link_path) == False and os.path.exists(check_point_name) == True and (time.time() - os.stat(fil_path).st_mtime) > over_time:
+                            continue
+                        log_list.append((link_path, topic))
+        return log_list
 
     @time_count
-    def collect(self, fil_path):
+    def collect(self, fil_path, topic):
         """
-        Collect each log fil by the way such as linux tail.
-        :param fil_path: 
-        :return: 
+        :param fil_path: The log path .
+        :param topic: The topic of the log.
+        :return:
         """
         f = open(fil_path, "r")
         self.check.check_point(f)
 
         while 1:
+            offset = f.tell()
             data = "".join(f.readlines(32*1024))
 
             if data != "":
+                data = lz4.frame.compress(data)
+
                 # Three step to send a data.
                 # 1.It must send the length of data to server in 4 bytes long.
                 # 2.Just push the data to the server.
                 # 3. Flush the check-point. Notice Notice Notice , check-point should be write after send
                 #  so that we will not miss any log.
-                data = lz4.frame.compress(data)
                 self.net.send(pack("i", len(data)))
                 self.net.send(data)
                 self.check.flush(f.tell())
@@ -137,9 +146,10 @@ class Agent(object):
                 break
 
     def run(self):
-        log_fil = self.hard_link()
-        for fil_path in log_fil:
-            self.collect(fil_path)
+        log_list = self.hard_link()
+        for each in log_list:
+            print each
+            self.collect(*each)
 
 
 if __name__ == "__main__":
