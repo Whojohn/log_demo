@@ -4,6 +4,7 @@ import SocketServer
 import sys
 import deque_master
 import lz4.frame
+import time
 from struct import unpack
 sys.path.append("../")
 from conf import serverconf
@@ -15,8 +16,16 @@ class MyServer(SocketServer.BaseRequestHandler ,object):
 
     def recv(self, conn, length):
         data = ""
-        while len(data)<length:
+        pre_len = 0
+        amount = 0
+        while len(data) < length:
             data += conn.recv(length-len(data))
+            if pre_len == len(data):
+                time.sleep(0.05)
+                amount += 1
+                if amount > 50:
+                    raise IOError
+                    break
         return data
 
     def handle(self):
@@ -24,10 +33,13 @@ class MyServer(SocketServer.BaseRequestHandler ,object):
         fd = self.server.buf.get_buffer("log")
         conn = self.request
         # print "get fd ok"
-        server_log=open("ser","w")
         while 1:
-            data_len = unpack("i", self.recv(conn, 4))[0]
-            data = self.recv(conn, data_len)
+            try:
+                data_len = unpack("i", self.recv(conn, 4))[0]
+                data = self.recv(conn, data_len)
+            except IOError:
+                print "agent network error happend"
+                break
             if data == 'exit':
                 print "quiet"
                 break
