@@ -5,6 +5,7 @@ import sys
 import deque_master
 import lz4.frame
 import time
+import json
 from struct import unpack
 sys.path.append("../")
 from conf import serverconf
@@ -30,13 +31,14 @@ class MyServer(SocketServer.BaseRequestHandler ,object):
 
     def handle(self):
         # print self.request,self.client_address,self.server
-        fd = self.server.buf.get_buffer("log")
+        fd = False 
         conn = self.request
         # print "get fd ok"
         while 1:
             try:
-                data_len = unpack("i", self.recv(conn, 4))[0]
-                data = self.recv(conn, data_len)
+                meat_len = unpack("i", self.recv(conn, 4))[0]
+                meat_data = json.loads(self.recv(conn, meat_len))
+                data = self.recv(conn, meat_data["length"])
             except IOError:
                 print "agent network error happend"
                 break
@@ -44,10 +46,10 @@ class MyServer(SocketServer.BaseRequestHandler ,object):
                 print "quiet"
                 break
             else:
-                fd.put(lz4.frame.decompress(data))
-                # fd.put(data)
-
-
+                if fd == False: 
+                    fd = self.server.buf.get_buffer(meat_data["topic"])
+                # fd.put(lz4.frame.decompress(data))
+                fd.put(data)
 
 
 if __name__ == '__main__':

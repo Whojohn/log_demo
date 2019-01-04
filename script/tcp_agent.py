@@ -111,6 +111,7 @@ class Agent(object):
                         log_list.append((link_path, topic))
         return log_list
 
+
     @time_count
     def collect(self, fil_path, topic):
         """
@@ -127,22 +128,27 @@ class Agent(object):
 
             if data != "":
                 data = lz4.frame.compress(data)
-
-                # Three step to send a data.
-                # 1.It must send the length of data to server in 4 bytes long.
-                # 2.Just push the data to the server.
-                # 3. Flush the check-point. Notice Notice Notice , check-point should be write after send
-                #  so that we will not miss any log.
-                self.net.send(pack("i", len(data)))
-                self.net.send(data)
-                self.check.flush(f.tell())
             else:
-                self.check.flush(f.tell())
+                data = "exit"
+            meat_data = {"offset": (offset, f.tell()),
+                         "topic": topic,
+                         "fd": fil_path,
+                         "length": len(data)
+                         }
+            # Three step to send a data.
+            # 1.It must send the length of data to server in by meat data.
+            # 2.Just push the data to the server.
+            # 3. Flush the check-point. Notice Notice Notice , check-point should be write after send
+            #  so that we will not miss any log.
+            meat_data = json.dumps(meat_data)
+            self.net.send(pack("i", len(meat_data)))
+            self.net.send(meat_data)
+            self.net.send(data)
+            self.check.flush(f.tell())
+            if data == "exit":
                 self.check.stop()
                 f.close()
-                self.net.send(pack("i", len("exit")))
-                self.net.send("exit")
-                print "exit"
+                print "finish collect"
                 break
 
     def run(self):
